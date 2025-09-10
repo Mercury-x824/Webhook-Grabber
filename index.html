@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Noir Detective | Server Intelligence</title>
     <style>
-        /* Base styles */
         * {
             margin: 0;
             padding: 0;
@@ -19,7 +18,6 @@
             line-height: 1.6;
             background-image: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), 
                               url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23111" width="100" height="100"/><path fill="%23222" d="M0 0L100 100M100 0L0 100" stroke-width="0.5"/></svg>');
-            background-size: cover;
             min-height: 100vh;
             padding: 20px;
         }
@@ -30,7 +28,6 @@
             padding: 20px;
         }
         
-        /* Header styles */
         header {
             text-align: center;
             margin-bottom: 40px;
@@ -52,7 +49,6 @@
             margin-bottom: 20px;
         }
         
-        /* Form styles */
         .input-section {
             background-color: rgba(30, 30, 30, 0.8);
             padding: 25px;
@@ -108,7 +104,6 @@
             color: #fff;
         }
         
-        /* Results section */
         .results-section {
             display: none;
             background-color: rgba(30, 30, 30, 0.8);
@@ -180,7 +175,6 @@
             text-align: right;
         }
         
-        /* Status indicators */
         .status-valid {
             border-left: 3px solid #4dff4d;
         }
@@ -189,7 +183,6 @@
             border-left: 3px solid #ff4d4d;
         }
         
-        /* Error message */
         .error-message {
             color: #ff4d4d;
             background-color: rgba(255, 77, 77, 0.1);
@@ -200,7 +193,6 @@
             border-left: 3px solid #ff4d4d;
         }
         
-        /* Loading indicator */
         .loading {
             display: none;
             text-align: center;
@@ -222,7 +214,6 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* Footer */
         footer {
             text-align: center;
             margin-top: 40px;
@@ -230,7 +221,6 @@
             font-size: 0.9rem;
         }
         
-        /* Noir decorative elements */
         .noir-border {
             height: 2px;
             background: linear-gradient(90deg, #0d0d0d, #404040, #0d0d0d);
@@ -249,7 +239,6 @@
             margin: 20px 0;
         }
         
-        /* Responsive adjustments */
         @media (max-width: 600px) {
             .container {
                 padding: 10px;
@@ -287,15 +276,15 @@
             <section class="input-section">
                 <h2>Server Intelligence Gathering</h2>
                 <div class="noir-border"></div>
-                <p>Provide a server invite link to extract server information.</p>
+                <p>Enter a Discord server invite code to extract public information.</p>
                 <p style="color: #8c8c8c; font-size: 0.9rem; margin-top: 10px;">
-                    Note: This tool requires a server invite code (the part after discord.gg/). 
+                    Note: This tool only extracts publicly available information from Discord servers.
                     Some information may be limited based on the server's privacy settings.
                 </p>
                 
                 <div class="form-group">
-                    <label for="invite-link">Server Invite Code:</label>
-                    <input type="text" id="invite-link" placeholder="abc123" autocomplete="off">
+                    <label for="invite-code">Server Invite Code:</label>
+                    <input type="text" id="invite-code" placeholder="abc123" autocomplete="off">
                 </div>
                 
                 <button id="investigate-btn">Extract Server Intelligence</button>
@@ -331,16 +320,16 @@
                                 <span class="info-value" id="server-id">Classified</span>
                             </div>
                             <div class="info-line">
-                                <span class="info-label">Creation Date:</span>
-                                <span class="info-value" id="server-creation">Classified</span>
+                                <span class="info-label">Description:</span>
+                                <span class="info-value" id="server-description">Classified</span>
                             </div>
                             <div class="info-line">
                                 <span class="info-label">Member Count:</span>
                                 <span class="info-value" id="server-members">Classified</span>
                             </div>
                             <div class="info-line">
-                                <span class="info-label">Verification Level:</span>
-                                <span class="info-value" id="server-verification">Classified</span>
+                                <span class="info-label">Online Count:</span>
+                                <span class="info-value" id="server-online">Classified</span>
                             </div>
                         </div>
                     </div>
@@ -350,7 +339,7 @@
                         <div class="result-content">
                             <div class="info-line">
                                 <span class="info-label">Invite Code:</span>
-                                <span class="info-value" id="invite-code">Classified</span>
+                                <span class="info-value" id="invite-code-result">Classified</span>
                             </div>
                             <div class="info-line">
                                 <span class="info-label">Inviter:</span>
@@ -369,6 +358,14 @@
                                 <span class="info-value" id="invite-max-uses">Classified</span>
                             </div>
                         </div>
+                    </div>
+                </div>
+                
+                <div class="result-item">
+                    <h3>Server Icon & Banner</h3>
+                    <div class="result-content" style="text-align: center;">
+                        <div id="server-icon" style="margin-bottom: 15px;"></div>
+                        <div id="server-banner"></div>
                     </div>
                 </div>
                 
@@ -392,7 +389,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const inviteLinkInput = document.getElementById('invite-link');
+            const inviteCodeInput = document.getElementById('invite-code');
             const investigateBtn = document.getElementById('investigate-btn');
             const newSearchBtn = document.getElementById('new-search-btn');
             const errorMessage = document.getElementById('error-message');
@@ -402,33 +399,21 @@
             // Result elements
             const serverName = document.getElementById('server-name');
             const serverId = document.getElementById('server-id');
-            const serverCreation = document.getElementById('server-creation');
+            const serverDescription = document.getElementById('server-description');
             const serverMembers = document.getElementById('server-members');
-            const serverVerification = document.getElementById('server-verification');
-            const inviteCode = document.getElementById('invite-code');
+            const serverOnline = document.getElementById('server-online');
+            const inviteCodeResult = document.getElementById('invite-code-result');
             const inviter = document.getElementById('inviter');
             const inviteChannel = document.getElementById('invite-channel');
             const inviteUses = document.getElementById('invite-uses');
             const inviteMaxUses = document.getElementById('invite-max-uses');
+            const serverIcon = document.getElementById('server-icon');
+            const serverBanner = document.getElementById('server-banner');
             const rawData = document.getElementById('raw-data');
             
-            // Format date from timestamp
-            function formatDate(timestamp) {
-                if (!timestamp) return 'Unknown';
-                const date = new Date(timestamp);
-                return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-            }
-            
-            // Format verification level
-            function formatVerificationLevel(level) {
-                const levels = {
-                    NONE: "None",
-                    LOW: "Low",
-                    MEDIUM: "Medium",
-                    HIGH: "High",
-                    VERY_HIGH: "Highest"
-                };
-                return levels[level] || level;
+            // Format numbers with commas
+            function formatNumber(num) {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             }
             
             // Get server information from Discord API
@@ -437,8 +422,12 @@
                     loadingIndicator.style.display = 'block';
                     errorMessage.style.display = 'none';
                     
-                    // Call our server endpoint to fetch data from Discord API
-                    const response = await fetch(`https://discord.com/api/v9/invites/${inviteCode}?with_counts=true&with_expiration=true`);
+                    // Call Discord API to fetch invite information
+                    const response = await fetch(`https://discord.com/api/v9/invites/${inviteCode}?with_counts=true&with_expiration=true`, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
                     
                     if (!response.ok) {
                         if (response.status === 404) {
@@ -455,15 +444,37 @@
                     // Update the UI with the gathered intelligence
                     serverName.textContent = data.guild.name;
                     serverId.textContent = data.guild.id;
-                    serverCreation.textContent = formatDate(data.guild.created_at);
-                    serverMembers.textContent = data.approximate_member_count.toLocaleString();
-                    serverVerification.textContent = formatVerificationLevel(data.guild.verification_level);
+                    serverDescription.textContent = data.guild.description || 'No description';
+                    serverMembers.textContent = formatNumber(data.approximate_member_count);
+                    serverOnline.textContent = formatNumber(data.approximate_presence_count);
                     
-                    inviteCode.textContent = data.code;
+                    inviteCodeResult.textContent = data.code;
                     inviter.textContent = data.inviter ? `${data.inviter.username}#${data.inviter.discriminator}` : 'Unknown';
                     inviteChannel.textContent = `#${data.channel.name} (${data.channel.id})`;
                     inviteUses.textContent = data.uses || 0;
                     inviteMaxUses.textContent = data.max_uses || 'Unlimited';
+                    
+                    // Display server icon if available
+                    if (data.guild.icon) {
+                        serverIcon.innerHTML = `
+                            <div style="margin-bottom: 8px;"><strong>Server Icon:</strong></div>
+                            <img src="https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.webp?size=128" 
+                                 alt="Server Icon" style="max-width: 128px; border-radius: 50%;">
+                        `;
+                    } else {
+                        serverIcon.innerHTML = '<div>No server icon available</div>';
+                    }
+                    
+                    // Display server banner if available
+                    if (data.guild.banner) {
+                        serverBanner.innerHTML = `
+                            <div style="margin-bottom: 8px; margin-top: 15px;"><strong>Server Banner:</strong></div>
+                            <img src="https://cdn.discordapp.com/banners/${data.guild.id}/${data.guild.banner}.webp?size=600" 
+                                 alt="Server Banner" style="max-width: 100%; border-radius: 8px;">
+                        `;
+                    } else {
+                        serverBanner.innerHTML = '<div>No server banner available</div>';
+                    }
                     
                     // Show raw data
                     rawData.textContent = JSON.stringify(data, null, 2);
@@ -485,7 +496,7 @@
             
             // Event listeners
             investigateBtn.addEventListener('click', function() {
-                const inviteCode = inviteLinkInput.value.trim();
+                const inviteCode = inviteCodeInput.value.trim();
                 
                 if (!inviteCode) {
                     errorMessage.textContent = "Please provide an invite code.";
@@ -501,26 +512,28 @@
             });
             
             newSearchBtn.addEventListener('click', function() {
-                inviteLinkInput.value = '';
+                inviteCodeInput.value = '';
                 resultsSection.style.display = 'none';
                 errorMessage.style.display = 'none';
                 
                 // Reset all result fields
                 serverName.textContent = 'Classified';
                 serverId.textContent = 'Classified';
-                serverCreation.textContent = 'Classified';
+                serverDescription.textContent = 'Classified';
                 serverMembers.textContent = 'Classified';
-                serverVerification.textContent = 'Classified';
-                inviteCode.textContent = 'Classified';
+                serverOnline.textContent = 'Classified';
+                inviteCodeResult.textContent = 'Classified';
                 inviter.textContent = 'Classified';
                 inviteChannel.textContent = 'Classified';
                 inviteUses.textContent = 'Classified';
                 inviteMaxUses.textContent = 'Classified';
+                serverIcon.innerHTML = '';
+                serverBanner.innerHTML = '';
                 rawData.textContent = 'Intelligence data will appear here after analysis...';
             });
             
             // Allow pressing Enter to submit
-            inviteLinkInput.addEventListener('keypress', function(e) {
+            inviteCodeInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     investigateBtn.click();
                 }
