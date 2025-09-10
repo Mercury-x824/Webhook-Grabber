@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noir Detective | Discord Server Analysis</title>
+    <style>
+        /* Base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+        
+        body {
+            background-color: #0d0d0d;
+            color: #d9d9d9;
+            line-height: 1.6;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), 
+                              url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23111" width="100" height="100"/><path fill="%23222" d="M0 0L100 100M100 0L0 100" stroke-width="0.5"/></svg>');
+            background-size: cover;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header styles */
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            color: #e6e6e6;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        
+        .tagline {
+            font-style: italic;
+            color: #a6a6a6;
+            margin-bottom: 20px;
+        }
+        
+        /* Form styles */
+        .input-section {
+            background-color: rgba(30, 30, 30, 0.8);
+            padding: 25px;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            margin-bottom: 30px;
+            border: 1px solid #333;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #bfbfbf;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background-color: #1a1a1a;
+            border: 1px solid #444;
+            color: #e6e6e6;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #8c8c8c;
+            box-shadow: 0 0 0 2px rgba(140, 140, 140, 0.2);
+        }
+        
+        button {
+            background-color: #262626;
+            color: #d9d9d9;
+            border: 1px solid #444;
+            padding: 12px 24px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        button:hover {
+            background-color: #404040;
+            color: #fff;
+        }
+        
+        /* Results section */
+        .results-section {
+            display: none;
+            background-color: rgba(30, 30, 30, 0.8);
+            padding: 25px;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            margin-bottom: 30px;
+            border: 1px solid #333;
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #444;
+        }
+        
+        .results-title {
+            font-size: 1.5rem;
+            color: #e6e6e6;
+        }
+        
+        .result-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: rgba(20, 20, 20, 0.5);
+            border-radius: 4px;
+            border-left: 3px solid #444;
+        }
+        
+        .result-item h3 {
+            margin-bottom: 10px;
+            color: #bfbfbf;
+            font-size: 1.1rem;
+        }
+        
+        .result-content {
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        
+        /* Error message */
+        .error-message {
+            color: #ff4d4d;
+            background-color: rgba(255, 77, 77, 0.1);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: none;
+            border-left: 3px solid #ff4d4d;
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #737373;
+            font-size: 0.9rem;
+        }
+        
+        /* Noir decorative elements */
+        .noir-border {
+            height: 2px;
+            background: linear-gradient(90deg, #0d0d0d, #404040, #0d0d0d);
+            margin: 25px 0;
+        }
+        
+        .venetian-blind {
+            height: 10px;
+            background: repeating-linear-gradient(
+                180deg,
+                #0d0d0d,
+                #0d0d0d 2px,
+                #262626 2px,
+                #262626 4px
+            );
+            margin: 20px 0;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .input-section, .results-section {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>NOIR DETECTIVE</h1>
+            <p class="tagline">Discord Server Investigation Tool</p>
+            <div class="venetian-blind"></div>
+        </header>
+        
+        <main>
+            <section class="input-section">
+                <h2>Server Invite Analysis</h2>
+                <div class="noir-border"></div>
+                <p>Enter a Discord server invite link to uncover server details.</p>
+                
+                <div class="form-group">
+                    <label for="invite-link">Invite Link:</label>
+                    <input type="text" id="invite-link" placeholder="https://discord.gg/example" autocomplete="off">
+                </div>
+                
+                <button id="investigate-btn">Investigate Server</button>
+                
+                <div id="error-message" class="error-message">
+                    Invalid Discord invite link. Please check the URL and try again.
+                </div>
+            </section>
+            
+            <section id="results-section" class="results-section">
+                <div class="results-header">
+                    <h2 class="results-title">Investigation Results</h2>
+                    <button id="new-search-btn">New Search</button>
+                </div>
+                
+                <div class="noir-border"></div>
+                
+                <div class="result-item">
+                    <h3>Server Owner Information</h3>
+                    <div id="owner-info" class="result-content">
+                        Waiting for data...
+                    </div>
+                </div>
+                
+                <div class="result-item">
+                    <h3>Server Webhooks</h3>
+                    <div id="webhooks-info" class="result-content">
+                        Waiting for data...
+                    </div>
+                </div>
+                
+                <div class="result-item">
+                    <h3>Raw Server Data</h3>
+                    <div id="raw-data" class="result-content">
+                        Waiting for data...
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <div class="venetian-blind"></div>
+            <p>Noir Detective &copy; 2023 | For educational purposes only</p>
+            <p>This tool demonstrates what information might be available from Discord server invites</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inviteLinkInput = document.getElementById('invite-link');
+            const investigateBtn = document.getElementById('investigate-btn');
+            const newSearchBtn = document.getElementById('new-search-btn');
+            const errorMessage = document.getElementById('error-message');
+            const resultsSection = document.getElementById('results-section');
+            const ownerInfo = document.getElementById('owner-info');
+            const webhooksInfo = document.getElementById('webhooks-info');
+            const rawData = document.getElementById('raw-data');
+            
+            // Validate Discord invite link format
+            function isValidDiscordInvite(url) {
+                const discordInviteRegex = /(https?:\/\/)?(www\.)?(discord\.(gg|io|me|li)|discordapp\.com\/invite)\/.+[a-z]/gi;
+                return discordInviteRegex.test(url);
+            }
+            
+            // Extract invite code from URL
+            function extractInviteCode(url) {
+                try {
+                    const parsedUrl = new URL(url);
+                    return parsedUrl.pathname.split('/').pop();
+                } catch (e) {
+                    // If it's not a valid URL, try to extract code directly
+                    const match = url.match(/(discord\.(gg|io|me|li)|discordapp\.com\/invite)\/(.+)/i);
+                    return match ? match[3] : null;
+                }
+            }
+            
+            // Simulate server investigation (in a real application, this would use Discord's API)
+            function investigateServer(inviteCode) {
+                // This is a simulation - in reality, you would need proper API access
+                // and permissions to access this information
+                
+                // Simulate API delay
+                investigateBtn.disabled = true;
+                investigateBtn.textContent = "Investigating...";
+                
+                setTimeout(() => {
+                    // Sample data for demonstration
+                    const sampleData = {
+                        server: {
+                            name: "Mystery Guild",
+                            id: "123456789012345678",
+                            ownerId: "987654321098765432"
+                        },
+                        owner: {
+                            username: "Shadow#1234",
+                            id: "987654321098765432",
+                            avatar: "a_1b2c3d4e5f67890",
+                            discriminator: "1234"
+                        },
+                        webhooks: [
+                            {
+                                name: "Announcements Bot",
+                                id: "111111111111111111",
+                                channel: "general",
+                                url: "https://discord.com/api/webhooks/111111111111111111/AbCdEfGhIjKlMnOpQrStUvWxYz"
+                            },
+                            {
+                                name: "Welcome Bot",
+                                id: "222222222222222222",
+                                channel: "welcome",
+                                url: "https://discord.com/api/webhooks/222222222222222222/ZyXwVuTsRqPoNmLkJiHgFeDcBa"
+                            }
+                        ]
+                    };
+                    
+                    // Display the results
+                    ownerInfo.textContent = `Username: ${sampleData.owner.username}\nUser ID: ${sampleData.owner.id}\nAvatar: ${sampleData.owner.avatar}`;
+                    
+                    if (sampleData.webhooks.length > 0) {
+                        webhooksInfo.textContent = sampleData.webhooks.map(webhook => 
+                            `Name: ${webhook.name}\nID: ${webhook.id}\nChannel: ${webhook.channel}\nURL: ${webhook.url}\n`
+                        ).join('\n');
+                    } else {
+                        webhooksInfo.textContent = "No webhooks found in this server.";
+                    }
+                    
+                    rawData.textContent = JSON.stringify(sampleData, null, 2);
+                    
+                    // Show results section
+                    resultsSection.style.display = 'block';
+                    
+                    // Reset button
+                    investigateBtn.disabled = false;
+                    investigateBtn.textContent = "Investigate Server";
+                    
+                    // Scroll to results
+                    resultsSection.scrollIntoView({ behavior: 'smooth' });
+                }, 2000);
+            }
+            
+            // Event listeners
+            investigateBtn.addEventListener('click', function() {
+                const inviteLink = inviteLinkInput.value.trim();
+                
+                if (!inviteLink) {
+                    errorMessage.textContent = "Please enter a Discord invite link.";
+                    errorMessage.style.display = 'block';
+                    return;
+                }
+                
+                if (!isValidDiscordInvite(inviteLink)) {
+                    errorMessage.textContent = "Invalid Discord invite link format.";
+                    errorMessage.style.display = 'block';
+                    return;
+                }
+                
+                errorMessage.style.display = 'none';
+                const inviteCode = extractInviteCode(inviteLink);
+                
+                if (!inviteCode) {
+                    errorMessage.textContent = "Could not extract invite code from the link.";
+                    errorMessage.style.display = 'block';
+                    return;
+                }
+                
+                investigateServer(inviteCode);
+            });
+            
+            newSearchBtn.addEventListener('click', function() {
+                inviteLinkInput.value = '';
+                resultsSection.style.display = 'none';
+                errorMessage.style.display = 'none';
+            });
+            
+            // Allow pressing Enter to submit
+            inviteLinkInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    investigateBtn.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
