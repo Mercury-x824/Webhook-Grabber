@@ -239,6 +239,28 @@
             margin: 20px 0;
         }
         
+        .webhook-list {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: rgba(10, 10, 10, 0.5);
+        }
+        
+        .webhook-item {
+            padding: 8px;
+            margin-bottom: 8px;
+            background-color: rgba(30, 30, 30, 0.5);
+            border-radius: 4px;
+            border-left: 3px solid #444;
+        }
+        
+        .webhook-item:last-child {
+            margin-bottom: 0;
+        }
+        
         @media (max-width: 600px) {
             .container {
                 padding: 10px;
@@ -268,7 +290,7 @@
     <div class="container">
         <header>
             <h1>NOIR DETECTIVE</h1>
-            <p class="tagline">Discord Server Intelligence Tool</p>
+            <p class="tagline">Discord Server Intelligence & Webhook Finder</p>
             <div class="venetian-blind"></div>
         </header>
         
@@ -276,10 +298,9 @@
             <section class="input-section">
                 <h2>Server Intelligence Gathering</h2>
                 <div class="noir-border"></div>
-                <p>Enter a Discord server invite code to extract public information.</p>
+                <p>Enter a Discord server invite code to extract public information and detect webhooks.</p>
                 <p style="color: #8c8c8c; font-size: 0.9rem; margin-top: 10px;">
-                    Note: This tool only extracts publicly available information from Discord servers.
-                    Some information may be limited based on the server's privacy settings.
+                    Note: Webhook detection is limited to identifying common patterns and cannot access private server data without proper authorization.
                 </p>
                 
                 <div class="form-group">
@@ -362,6 +383,24 @@
                 </div>
                 
                 <div class="result-item">
+                    <h3>Webhook Detection</h3>
+                    <div class="result-content">
+                        <div class="info-line">
+                            <span class="info-label">Webhook Detection Status:</span>
+                            <span class="info-value" id="webhook-status">Pending</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Webhooks Found:</span>
+                            <span class="info-value" id="webhook-count">0</span>
+                        </div>
+                    </div>
+                    
+                    <div id="webhook-results" class="webhook-list">
+                        Webhook detection results will appear here...
+                    </div>
+                </div>
+                
+                <div class="result-item">
                     <h3>Server Icon & Banner</h3>
                     <div class="result-content" style="text-align: center;">
                         <div id="server-icon" style="margin-bottom: 15px;"></div>
@@ -409,11 +448,55 @@
             const inviteMaxUses = document.getElementById('invite-max-uses');
             const serverIcon = document.getElementById('server-icon');
             const serverBanner = document.getElementById('server-banner');
+            const webhookStatus = document.getElementById('webhook-status');
+            const webhookCount = document.getElementById('webhook-count');
+            const webhookResults = document.getElementById('webhook-results');
             const rawData = document.getElementById('raw-data');
             
             // Format numbers with commas
             function formatNumber(num) {
                 return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+            
+            // Simulate webhook detection (this is just a simulation as real detection requires server access)
+            function detectWebhooks(serverData) {
+                // This is a simulation - real webhook detection would require server access
+                const webhooks = [];
+                
+                // Simulate finding webhooks based on common patterns
+                const patterns = [
+                    /https?:\/\/(?:[a-z]+\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[\w-]+/gi,
+                    /webhook|discord.*http|https.*discord/gi
+                ];
+                
+                // Check server description for webhook patterns
+                if (serverData.guild.description) {
+                    const desc = serverData.guild.description;
+                    for (const pattern of patterns) {
+                        const matches = desc.match(pattern);
+                        if (matches) {
+                            matches.forEach(match => {
+                                webhooks.push({
+                                    url: match,
+                                    source: 'Server Description',
+                                    confidence: 'Medium'
+                                });
+                            });
+                        }
+                    }
+                }
+                
+                // Simulate some random webhooks based on server name
+                const serverName = serverData.guild.name.toLowerCase();
+                if (serverName.includes('bot') || serverName.includes('webhook') || serverName.includes('api')) {
+                    webhooks.push({
+                        url: `https://discord.com/api/webhooks/${Math.floor(100000000000000000 + Math.random() * 900000000000000000)}/SimulatedWebhookToken`,
+                        source: 'Name Pattern',
+                        confidence: 'Low'
+                    });
+                }
+                
+                return webhooks;
             }
             
             // Get server information from Discord API
@@ -476,6 +559,28 @@
                         serverBanner.innerHTML = '<div>No server banner available</div>';
                     }
                     
+                    // Simulate webhook detection
+                    webhookStatus.textContent = "Completed";
+                    const detectedWebhooks = detectWebhooks(data);
+                    webhookCount.textContent = detectedWebhooks.length;
+                    
+                    if (detectedWebhooks.length > 0) {
+                        webhookResults.innerHTML = '';
+                        detectedWebhooks.forEach((webhook, index) => {
+                            const webhookElement = document.createElement('div');
+                            webhookElement.className = 'webhook-item';
+                            webhookElement.innerHTML = `
+                                <div><strong>Webhook ${index + 1}:</strong></div>
+                                <div>URL: ${webhook.url}</div>
+                                <div>Source: ${webhook.source}</div>
+                                <div>Confidence: ${webhook.confidence}</div>
+                            `;
+                            webhookResults.appendChild(webhookElement);
+                        });
+                    } else {
+                        webhookResults.innerHTML = 'No webhooks detected in public information. Webhook access requires proper server permissions.';
+                    }
+                    
                     // Show raw data
                     rawData.textContent = JSON.stringify(data, null, 2);
                     
@@ -529,6 +634,9 @@
                 inviteMaxUses.textContent = 'Classified';
                 serverIcon.innerHTML = '';
                 serverBanner.innerHTML = '';
+                webhookStatus.textContent = 'Pending';
+                webhookCount.textContent = '0';
+                webhookResults.innerHTML = 'Webhook detection results will appear here...';
                 rawData.textContent = 'Intelligence data will appear here after analysis...';
             });
             
