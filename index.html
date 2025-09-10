@@ -261,6 +261,24 @@
             margin-bottom: 0;
         }
         
+        .webhook-url {
+            word-break: break-all;
+            font-size: 0.9rem;
+            color: #8c8c8c;
+        }
+        
+        .webhook-details {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 4px;
+        }
+        
+        .scan-message {
+            color: #8c8c8c;
+            font-style: italic;
+            margin-top: 10px;
+        }
+        
         @media (max-width: 600px) {
             .container {
                 padding: 10px;
@@ -398,6 +416,10 @@
                     <div id="webhook-results" class="webhook-list">
                         Webhook detection results will appear here...
                     </div>
+                    
+                    <div id="scan-message" class="scan-message">
+                        Scanning public information for webhook patterns...
+                    </div>
                 </div>
                 
                 <div class="result-item">
@@ -434,6 +456,7 @@
             const errorMessage = document.getElementById('error-message');
             const loadingIndicator = document.getElementById('loading');
             const resultsSection = document.getElementById('results-section');
+            const scanMessage = document.getElementById('scan-message');
             
             // Result elements
             const serverName = document.getElementById('server-name');
@@ -458,26 +481,29 @@
                 return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             }
             
-            // Simulate webhook detection (this is just a simulation as real detection requires server access)
-            function detectWebhooks(serverData) {
-                // This is a simulation - real webhook detection would require server access
-                const webhooks = [];
+            // Function to scan for webhooks in public information
+            async function scanForWebhooks(serverData) {
+                scanMessage.textContent = "Scanning public information for webhook patterns...";
                 
-                // Simulate finding webhooks based on common patterns
-                const patterns = [
-                    /https?:\/\/(?:[a-z]+\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[\w-]+/gi,
-                    /webhook|discord.*http|https.*discord/gi
+                // Array to store found webhooks
+                const foundWebhooks = [];
+                
+                // Regular expressions to detect webhook URLs
+                const webhookPatterns = [
+                    /https?:\/\/(?:canary\.|ptb\.)?discord(?:app)?\.com\/api(?:\/v\d+)?\/webhooks\/\d+\/[\w-]+/gi,
+                    /discord\.com\/api\/webhooks\/\d+\/[\w-]+/gi,
+                    /discordapp\.com\/api\/webhooks\/\d+\/[\w-]+/gi
                 ];
                 
                 // Check server description for webhook patterns
                 if (serverData.guild.description) {
-                    const desc = serverData.guild.description;
-                    for (const pattern of patterns) {
-                        const matches = desc.match(pattern);
+                    const description = serverData.guild.description;
+                    for (const pattern of webhookPatterns) {
+                        const matches = description.match(pattern);
                         if (matches) {
-                            matches.forEach(match => {
-                                webhooks.push({
-                                    url: match,
+                            matches.forEach(url => {
+                                foundWebhooks.push({
+                                    url: url,
                                     source: 'Server Description',
                                     confidence: 'Medium'
                                 });
@@ -486,17 +512,40 @@
                     }
                 }
                 
-                // Simulate some random webhooks based on server name
-                const serverName = serverData.guild.name.toLowerCase();
-                if (serverName.includes('bot') || serverName.includes('webhook') || serverName.includes('api')) {
-                    webhooks.push({
-                        url: `https://discord.com/api/webhooks/${Math.floor(100000000000000000 + Math.random() * 900000000000000000)}/SimulatedWebhookToken`,
-                        source: 'Name Pattern',
-                        confidence: 'Low'
-                    });
+                // Check channel name for webhook-related terms
+                if (serverData.channel && serverData.channel.name) {
+                    const channelName = serverData.channel.name.toLowerCase();
+                    const webhookTerms = ['webhook', 'hook', 'discordhook', 'bot'];
+                    
+                    if (webhookTerms.some(term => channelName.includes(term))) {
+                        foundWebhooks.push({
+                            url: `Potential webhook channel: #${serverData.channel.name}`,
+                            source: 'Channel Name',
+                            confidence: 'Low'
+                        });
+                    }
                 }
                 
-                return webhooks;
+                // Check server name for webhook-related terms
+                if (serverData.guild.name) {
+                    const serverName = serverData.guild.name.toLowerCase();
+                    const webhookTerms = ['webhook', 'hook', 'discordhook', 'bot'];
+                    
+                    if (webhookTerms.some(term => serverName.includes(term))) {
+                        foundWebhooks.push({
+                            url: `Server name suggests webhook usage: ${serverData.guild.name}`,
+                            source: 'Server Name',
+                            confidence: 'Low'
+                        });
+                    }
+                }
+                
+                // Simulate additional scanning (in a real scenario, you might check other public data)
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                scanMessage.textContent = `Scan completed. Found ${foundWebhooks.length} potential webhook indicators.`;
+                
+                return foundWebhooks;
             }
             
             // Get server information from Discord API
@@ -559,9 +608,10 @@
                         serverBanner.innerHTML = '<div>No server banner available</div>';
                     }
                     
-                    // Simulate webhook detection
+                    // Scan for webhooks in public information
+                    webhookStatus.textContent = "Scanning...";
+                    const detectedWebhooks = await scanForWebhooks(data);
                     webhookStatus.textContent = "Completed";
-                    const detectedWebhooks = detectWebhooks(data);
                     webhookCount.textContent = detectedWebhooks.length;
                     
                     if (detectedWebhooks.length > 0) {
@@ -571,14 +621,13 @@
                             webhookElement.className = 'webhook-item';
                             webhookElement.innerHTML = `
                                 <div><strong>Webhook ${index + 1}:</strong></div>
-                                <div>URL: ${webhook.url}</div>
-                                <div>Source: ${webhook.source}</div>
-                                <div>Confidence: ${webhook.confidence}</div>
+                                <div class="webhook-url">${webhook.url}</div>
+                                <div class="webhook-details">Source: ${webhook.source} | Confidence: ${webhook.confidence}</div>
                             `;
                             webhookResults.appendChild(webhookElement);
                         });
                     } else {
-                        webhookResults.innerHTML = 'No webhooks detected in public information. Webhook access requires proper server permissions.';
+                        webhookResults.innerHTML = 'No webhook patterns detected in public information. Webhook access requires proper server permissions.';
                     }
                     
                     // Show raw data
@@ -620,6 +669,7 @@
                 inviteCodeInput.value = '';
                 resultsSection.style.display = 'none';
                 errorMessage.style.display = 'none';
+                scanMessage.textContent = "Scanning public information for webhook patterns...";
                 
                 // Reset all result fields
                 serverName.textContent = 'Classified';
