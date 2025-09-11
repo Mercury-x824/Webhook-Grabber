@@ -114,6 +114,15 @@
             border: 1px solid #333;
         }
         
+        .client-info-section {
+            background-color: rgba(30, 30, 30, 0.8);
+            padding: 25px;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            margin-bottom: 30px;
+            border: 1px solid #333;
+        }
+        
         .results-header {
             display: flex;
             justify-content: space-between;
@@ -181,6 +190,10 @@
         
         .status-invalid {
             border-left: 3px solid #ff4d4d;
+        }
+        
+        .status-warning {
+            border-left: 3px solid #ffcc00;
         }
         
         .error-message {
@@ -348,7 +361,7 @@
                 font-size: 2rem;
             }
             
-            .input-section, .results-section {
+            .input-section, .results-section, .client-info-section {
                 padding: 15px;
             }
             
@@ -373,6 +386,69 @@
         </header>
         
         <main>
+            <section class="client-info-section">
+                <h2>Your Connection Information</h2>
+                <div class="noir-border"></div>
+                
+                <div class="result-grid">
+                    <div class="result-item">
+                        <h3>IP Address & Location</h3>
+                        <div class="result-content">
+                            <div class="info-line">
+                                <span class="info-label">IP Address:</span>
+                                <span class="info-value" id="client-ip">Detecting...</span>
+                            </div>
+                            <div class="info-line">
+                                <span class="info-label">Location:</span>
+                                <span class="info-value" id="client-location">Detecting...</span>
+                            </div>
+                            <div class="info-line">
+                                <span class="info-label">ISP:</span>
+                                <span class="info-value" id="client-isp">Detecting...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <h3>Browser Information</h3>
+                        <div class="result-content">
+                            <div class="info-line">
+                                <span class="info-label">Browser:</span>
+                                <span class="info-value" id="client-browser">Detecting...</span>
+                            </div>
+                            <div class="info-line">
+                                <span class="info-label">Platform:</span>
+                                <span class="info-value" id="client-platform">Detecting...</span>
+                            </div>
+                            <div class="info-line">
+                                <span class="info-label">Language:</span>
+                                <span class="info-value" id="client-language">Detecting...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <h3>VPN/Proxy Detection</h3>
+                        <div class="result-content">
+                            <div class="info-line">
+                                <span class="info-label">VPN/Proxy:</span>
+                                <span class="info-value" id="client-vpn">Detecting...</span>
+                            </div>
+                            <div class="info-line">
+                                <span class="info-label">Hosting Provider:</span>
+                                <span class="info-value" id="client-hosting">Detecting...</span>
+                            </div>
+                            <div class="info-line">
+                                <span class="info-label">Tor Network:</span>
+                                <span class="info-value" id="client-tor">Detecting...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="noir-border"></div>
+            </section>
+            
             <section class="input-section">
                 <h2>Server Intelligence Gathering</h2>
                 <div class="noir-border"></div>
@@ -544,6 +620,17 @@
             const botScanMessage = document.getElementById('bot-scan-message');
             const copyRawDataBtn = document.getElementById('copy-raw-data');
             
+            // Client info elements
+            const clientIp = document.getElementById('client-ip');
+            const clientLocation = document.getElementById('client-location');
+            const clientIsp = document.getElementById('client-isp');
+            const clientBrowser = document.getElementById('client-browser');
+            const clientPlatform = document.getElementById('client-platform');
+            const clientLanguage = document.getElementById('client-language');
+            const clientVpn = document.getElementById('client-vpn');
+            const clientHosting = document.getElementById('client-hosting');
+            const clientTor = document.getElementById('client-tor');
+            
             // Result elements
             const serverName = document.getElementById('server-name');
             const serverId = document.getElementById('server-id');
@@ -564,6 +651,94 @@
             const botCount = document.getElementById('bot-count');
             const botResults = document.getElementById('bot-results');
             const rawData = document.getElementById('raw-data');
+            
+            // Function to detect browser information
+            function detectBrowser() {
+                const userAgent = navigator.userAgent;
+                let browserName = "Unknown";
+                
+                if (userAgent.includes("Firefox")) {
+                    browserName = "Firefox";
+                } else if (userAgent.includes("Chrome") && !userAgent.includes("Edg")) {
+                    browserName = "Chrome";
+                } else if (userAgent.includes("Safari") && !userAgent.includes("Chrome")) {
+                    browserName = "Safari";
+                } else if (userAgent.includes("Edg")) {
+                    browserName = "Edge";
+                } else if (userAgent.includes("Opera") || userAgent.includes("OPR")) {
+                    browserName = "Opera";
+                }
+                
+                return browserName;
+            }
+            
+            // Function to detect platform
+            function detectPlatform() {
+                const userAgent = navigator.userAgent;
+                let platform = "Unknown";
+                
+                if (userAgent.includes("Win")) {
+                    platform = "Windows";
+                } else if (userAgent.includes("Mac")) {
+                    platform = "MacOS";
+                } else if (userAgent.includes("Linux")) {
+                    platform = "Linux";
+                } else if (userAgent.includes("Android")) {
+                    platform = "Android";
+                } else if (userAgent.includes("like Mac")) {
+                    platform = "iOS";
+                }
+                
+                return platform;
+            }
+            
+            // Function to get IP and location information
+            async function getClientInfo() {
+                try {
+                    // Get browser info
+                    clientBrowser.textContent = detectBrowser();
+                    clientPlatform.textContent = detectPlatform();
+                    clientLanguage.textContent = navigator.language || "Unknown";
+                    
+                    // Get IP and location info
+                    const response = await fetch('https://ipapi.co/json/');
+                    const data = await response.json();
+                    
+                    clientIp.textContent = data.ip || "Unknown";
+                    clientLocation.textContent = `${data.city || "Unknown"}, ${data.region || "Unknown"}, ${data.country_name || "Unknown"}`;
+                    clientIsp.textContent = data.org || "Unknown";
+                    
+                    // Check for VPN/Proxy (using ipapi's proxy detection)
+                    clientVpn.textContent = data.proxy === true ? "Likely (Proxy detected)" : 
+                                           data.proxy === false ? "Unlikely" : "Unknown";
+                    
+                    // Check if IP belongs to a hosting provider
+                    const hostingProviders = ["amazon", "google", "digitalocean", "linode", "ovh", "vultr", "azure", "cloudflare", "rackspace", "heroku"];
+                    const isHosting = hostingProviders.some(provider => 
+                        data.org && data.org.toLowerCase().includes(provider)
+                    );
+                    clientHosting.textContent = isHosting ? "Yes" : "No";
+                    
+                    // Check for Tor (common Tor exit nodes)
+                    const torExitNodes = ["torproject.org", "tor exit", "tor node"];
+                    const isTor = torExitNodes.some(tor => 
+                        data.org && data.org.toLowerCase().includes(tor)
+                    );
+                    clientTor.textContent = isTor ? "Likely" : "Unlikely";
+                    
+                } catch (error) {
+                    console.error("Error fetching client info:", error);
+                    clientIp.textContent = "Failed to detect";
+                    clientLocation.textContent = "Failed to detect";
+                    clientIsp.textContent = "Failed to detect";
+                    clientVpn.textContent = "Failed to detect";
+                    clientHosting.textContent = "Failed to detect";
+                    clientTor.textContent = "Failed to detect";
+                }
+            }
+            
+            // Get client info when page loads
+            getClientInfo();
             
             // Format numbers with commas
             function formatNumber(num) {
@@ -799,7 +974,7 @@
                     }
                     
                     // Scan for webhooks in public information
-                    webhookStatus.textContent = "Scanning...";
+                    webhookStatus.textcontent = "Scanning...";
                     const detectedWebhooks = await scanForWebhooks(data);
                     webhookStatus.textContent = "Completed";
                     webhookCount.textContent = detectedWebhooks.length;
