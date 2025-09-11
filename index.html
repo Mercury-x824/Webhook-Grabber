@@ -23,7 +23,7 @@
         }
         
         .container {
-            max-width: 900px;
+            max-width: 1100px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -239,7 +239,7 @@
             margin: 20px 0;
         }
         
-        .webhook-list {
+        .webhook-list, .bot-list {
             margin-top: 15px;
             max-height: 200px;
             overflow-y: auto;
@@ -249,7 +249,7 @@
             background-color: rgba(10, 10, 10, 0.5);
         }
         
-        .webhook-item {
+        .webhook-item, .bot-item {
             padding: 8px;
             margin-bottom: 8px;
             background-color: rgba(30, 30, 30, 0.5);
@@ -257,17 +257,17 @@
             border-left: 3px solid #444;
         }
         
-        .webhook-item:last-child {
+        .webhook-item:last-child, .bot-item:last-child {
             margin-bottom: 0;
         }
         
-        .webhook-url {
+        .webhook-url, .bot-name {
             word-break: break-all;
             font-size: 0.9rem;
             color: #8c8c8c;
         }
         
-        .webhook-details {
+        .webhook-details, .bot-details {
             font-size: 0.8rem;
             color: #666;
             margin-top: 4px;
@@ -277,6 +277,66 @@
             color: #8c8c8c;
             font-style: italic;
             margin-top: 10px;
+        }
+        
+        .raw-data-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: rgba(10, 10, 10, 0.5);
+            margin-top: 10px;
+        }
+        
+        .raw-data-content {
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 0.85rem;
+            color: #8c8c8c;
+        }
+        
+        .json-key {
+            color: #55b5db;
+        }
+        
+        .json-string {
+            color: #c8755e;
+        }
+        
+        .json-number {
+            color: #6aab73;
+        }
+        
+        .json-boolean {
+            color: #d18ed2;
+        }
+        
+        .json-null {
+            color: #57c7ff;
+        }
+        
+        .copy-btn {
+            background-color: #333;
+            color: #ccc;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .copy-btn:hover {
+            background-color: #444;
+            color: #fff;
+        }
+        
+        .token-warning {
+            color: #ff4d4d;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            font-style: italic;
         }
         
         @media (max-width: 600px) {
@@ -401,6 +461,28 @@
                 </div>
                 
                 <div class="result-item">
+                    <h3>Bot Detection</h3>
+                    <div class="result-content">
+                        <div class="info-line">
+                            <span class="info-label">Bot Detection Status:</span>
+                            <span class="info-value" id="bot-status">Pending</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Bots Found:</span>
+                            <span class="info-value" id="bot-count">0</span>
+                        </div>
+                    </div>
+                    
+                    <div id="bot-results" class="bot-list">
+                        Bot detection results will appear here...
+                    </div>
+                    
+                    <div id="bot-scan-message" class="scan-message">
+                        Scanning for bot patterns...
+                    </div>
+                </div>
+                
+                <div class="result-item">
                     <h3>Webhook Detection</h3>
                     <div class="result-content">
                         <div class="info-line">
@@ -417,7 +499,7 @@
                         Webhook detection results will appear here...
                     </div>
                     
-                    <div id="scan-message" class="scan-message">
+                    <div id="webhook-scan-message" class="scan-message">
                         Scanning public information for webhook patterns...
                     </div>
                 </div>
@@ -433,9 +515,11 @@
                 <div class="noir-border"></div>
                 
                 <div class="result-item">
-                    <h3>Raw Data</h3>
-                    <div id="raw-data" class="result-content" style="max-height: 200px; overflow-y: auto;">
-                        Intelligence data will appear here after analysis...
+                    <h3>Raw Data <button id="copy-raw-data" class="copy-btn">Copy</button></h3>
+                    <div class="raw-data-container">
+                        <div id="raw-data" class="raw-data-content">
+                            Intelligence data will appear here after analysis...
+                        </div>
                     </div>
                 </div>
             </section>
@@ -456,7 +540,9 @@
             const errorMessage = document.getElementById('error-message');
             const loadingIndicator = document.getElementById('loading');
             const resultsSection = document.getElementById('results-section');
-            const scanMessage = document.getElementById('scan-message');
+            const webhookScanMessage = document.getElementById('webhook-scan-message');
+            const botScanMessage = document.getElementById('bot-scan-message');
+            const copyRawDataBtn = document.getElementById('copy-raw-data');
             
             // Result elements
             const serverName = document.getElementById('server-name');
@@ -474,6 +560,9 @@
             const webhookStatus = document.getElementById('webhook-status');
             const webhookCount = document.getElementById('webhook-count');
             const webhookResults = document.getElementById('webhook-results');
+            const botStatus = document.getElementById('bot-status');
+            const botCount = document.getElementById('bot-count');
+            const botResults = document.getElementById('bot-results');
             const rawData = document.getElementById('raw-data');
             
             // Format numbers with commas
@@ -481,9 +570,87 @@
                 return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             }
             
+            // Function to syntax highlight JSON
+            function syntaxHighlight(json) {
+                if (typeof json != 'string') {
+                    json = JSON.stringify(json, null, 2);
+                }
+                
+                json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                
+                return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                    let cls = 'json-number';
+                    if (/^"/.test(match)) {
+                        if (/:$/.test(match)) {
+                            cls = 'json-key';
+                        } else {
+                            cls = 'json-string';
+                        }
+                    } else if (/true|false/.test(match)) {
+                        cls = 'json-boolean';
+                    } else if (/null/.test(match)) {
+                        cls = 'json-null';
+                    }
+                    return '<span class="' + cls + '">' + match + '</span>';
+                });
+            }
+            
+            // Function to scan for bots in public information
+            async function scanForBots(serverData) {
+                botScanMessage.textContent = "Scanning for bot patterns...";
+                
+                // Array to store found bots
+                const foundBots = [];
+                
+                // Regular expressions to detect bot tokens
+                const tokenPatterns = [
+                    /[MN][A-Za-z\d]{23}\.[A-Za-z\d]{6}\.[A-Za-z\d-_]{27}/g,
+                    /mfa\.[A-Za-z\d-_]{84}/g
+                ];
+                
+                // Check server description for bot tokens
+                if (serverData.guild.description) {
+                    const description = serverData.guild.description;
+                    for (const pattern of tokenPatterns) {
+                        const matches = description.match(pattern);
+                        if (matches) {
+                            matches.forEach(token => {
+                                foundBots.push({
+                                    name: "Unknown Bot (Token Found)",
+                                    token: token,
+                                    source: 'Server Description',
+                                    confidence: 'High'
+                                });
+                            });
+                        }
+                    }
+                }
+                
+                // Check for bot-related terms in server name and description
+                const botTerms = ['bot', 'discord bot', 'automation', 'webhook', 'api'];
+                const serverName = serverData.guild.name ? serverData.guild.name.toLowerCase() : '';
+                const serverDesc = serverData.guild.description ? serverData.guild.description.toLowerCase() : '';
+                
+                if (botTerms.some(term => serverName.includes(term) || serverDesc.includes(term))) {
+                    foundBots.push({
+                        name: "Potential Bot Server",
+                        token: "Not found",
+                        source: 'Server Name/Description',
+                        confidence: 'Low'
+                    });
+                }
+                
+                // Simulate additional scanning
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                botScanMessage.textContent = `Scan completed. Found ${foundBots.length} potential bot indicators.`;
+                
+                return foundBots;
+            }
+            
             // Function to scan for webhooks in public information
             async function scanForWebhooks(serverData) {
-                scanMessage.textContent = "Scanning public information for webhook patterns...";
+                webhookScanMessage.textContent = "Scanning public information for webhook patterns...";
                 
                 // Array to store found webhooks
                 const foundWebhooks = [];
@@ -540,10 +707,10 @@
                     }
                 }
                 
-                // Simulate additional scanning (in a real scenario, you might check other public data)
+                // Simulate additional scanning
                 await new Promise(resolve => setTimeout(resolve, 1500));
                 
-                scanMessage.textContent = `Scan completed. Found ${foundWebhooks.length} potential webhook indicators.`;
+                webhookScanMessage.textContent = `Scan completed. Found ${foundWebhooks.length} potential webhook indicators.`;
                 
                 return foundWebhooks;
             }
@@ -608,6 +775,29 @@
                         serverBanner.innerHTML = '<div>No server banner available</div>';
                     }
                     
+                    // Scan for bots in public information
+                    botStatus.textContent = "Scanning...";
+                    const detectedBots = await scanForBots(data);
+                    botStatus.textContent = "Completed";
+                    botCount.textContent = detectedBots.length;
+                    
+                    if (detectedBots.length > 0) {
+                        botResults.innerHTML = '';
+                        detectedBots.forEach((bot, index) => {
+                            const botElement = document.createElement('div');
+                            botElement.className = 'bot-item';
+                            botElement.innerHTML = `
+                                <div><strong>Bot ${index + 1}:</strong> ${bot.name}</div>
+                                <div class="bot-name">Token: ${bot.token}</div>
+                                <div class="bot-details">Source: ${bot.source} | Confidence: ${bot.confidence}</div>
+                                ${bot.token !== "Not found" ? '<div class="token-warning">Warning: Exposed bot token detected!</div>' : ''}
+                            `;
+                            botResults.appendChild(botElement);
+                        });
+                    } else {
+                        botResults.innerHTML = 'No bot tokens or patterns detected in public information.';
+                    }
+                    
                     // Scan for webhooks in public information
                     webhookStatus.textContent = "Scanning...";
                     const detectedWebhooks = await scanForWebhooks(data);
@@ -630,8 +820,8 @@
                         webhookResults.innerHTML = 'No webhook patterns detected in public information. Webhook access requires proper server permissions.';
                     }
                     
-                    // Show raw data
-                    rawData.textContent = JSON.stringify(data, null, 2);
+                    // Show raw data with syntax highlighting
+                    rawData.innerHTML = syntaxHighlight(data);
                     
                     // Show results section
                     resultsSection.style.display = 'block';
@@ -669,7 +859,8 @@
                 inviteCodeInput.value = '';
                 resultsSection.style.display = 'none';
                 errorMessage.style.display = 'none';
-                scanMessage.textContent = "Scanning public information for webhook patterns...";
+                webhookScanMessage.textContent = "Scanning public information for webhook patterns...";
+                botScanMessage.textContent = "Scanning for bot patterns...";
                 
                 // Reset all result fields
                 serverName.textContent = 'Classified';
@@ -687,7 +878,24 @@
                 webhookStatus.textContent = 'Pending';
                 webhookCount.textContent = '0';
                 webhookResults.innerHTML = 'Webhook detection results will appear here...';
+                botStatus.textContent = 'Pending';
+                botCount.textContent = '0';
+                botResults.innerHTML = 'Bot detection results will appear here...';
                 rawData.textContent = 'Intelligence data will appear here after analysis...';
+            });
+            
+            // Copy raw data to clipboard
+            copyRawDataBtn.addEventListener('click', function() {
+                const textToCopy = document.getElementById('raw-data').textContent;
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    const originalText = copyRawDataBtn.textContent;
+                    copyRawDataBtn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyRawDataBtn.textContent = originalText;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
             });
             
             // Allow pressing Enter to submit
